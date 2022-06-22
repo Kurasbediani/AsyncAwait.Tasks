@@ -56,6 +56,7 @@ internal class Program
         Console.WriteLine($"The task for {n} started... Enter N to cancel the request:");
 
         var t1 = Calculator.Calculate(n, token);
+
         var t1CancelationContinuation = t1.ContinueWith((t) =>
         {
             Console.WriteLine($"Sum for {n} cancelled...");
@@ -67,26 +68,39 @@ internal class Program
             Console.WriteLine();
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
-        var t2 = Task.Run(() =>
-        {
-            while (!t1.IsCompleted)
-            {
-                Console.WriteLine("Enter N: ");
-                var input = Console.ReadLine();
-
-                if (!t1.IsCompleted)
-                    src.Cancel();
-
-                if (int.TryParse(input, out var nn))
-                {
-                    CalculateSum(nn);
-                    break;
-                }
-            }
-        });
+        var t2 = Task.Run(() => CheckInput(src));
 
         Task.WaitAll(t1, t2, t1CancelationContinuation, t1SuccessfulyContinuation);
-            
+
         return;
+    }
+
+    static void CheckInput(CancellationTokenSource src = null)
+    {
+        var input = EnterInput();
+
+        while (input.Trim().ToUpper() != "Q")
+        {
+            if (int.TryParse(input, out var nn) && nn > 0)
+            {
+                if (src != null)
+                    src.Cancel();
+
+                CalculateSum(nn);
+                break;
+            }
+            else
+            {
+                Console.WriteLine($"Invalid integer: '{input}'. Please try again.");
+            }
+
+            input = EnterInput();
+        }
+    }
+
+    static string EnterInput()
+    {
+        Console.WriteLine("Enter N: ");
+        return Console.ReadLine();
     }
 }
